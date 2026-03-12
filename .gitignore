@@ -1,0 +1,27 @@
+# --- Python Environment ---
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Environment Secrets ---
+# NEVER push your .env file to Git!
+.env
+
+# --- Local Databases ---
+# We keep our mock data local; let the setup_db.py build it for others
+databases/*.db
+databases/*.db-journal
+databases/*.db-wal
+
+# --- Streamlit & Tools ---
+.streamlit/config.toml
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db
