@@ -1,123 +1,246 @@
-
-```
 # 🛡️ Supply Chain Swarm Command Center
 
 An enterprise-grade, agentic AI system designed to monitor logistics, manage inventory, and handle procurement with **Human-in-the-Loop (HITL)** safety protocols. Built using **LangGraph**, **MCP (Model Context Protocol)**, and **Streamlit**.
 
 ---
 
-## 🏗️ Architecture Overview
+# 🏗️ Architecture Overview
 
-The system operates as an autonomous "Triage Commander" that utilizes a swarm of specialized tools to bridge the gap between AI reasoning and real-world database operations.
+The system operates as an autonomous **"Triage Commander"** that utilizes a swarm of specialized tools to bridge the gap between AI reasoning and real-world database operations.
 
-- **Orchestration:** LangGraph (Stateful, multi-turn agentic workflows).
-- **Communication:** MCP (Model Context Protocol) for secure tool execution.
-- **Frontend:** Streamlit (Real-time monitoring and chat interface).
-- **Safety:** HITL Breakpoints (AI proposes actions; Human approves/rejects).
-- **Memory:** Persistent `MemorySaver` with unique session threading.
+- **Orchestration:** LangGraph (Stateful, multi-turn agentic workflows)
+- **Communication:** MCP (Model Context Protocol) for secure tool execution
+- **Frontend:** Streamlit (Real-time monitoring and chat interface)
+- **Safety:** HITL Breakpoints (AI proposes actions; Human approves/rejects)
+- **Memory:** Persistent `MemorySaver` with unique session threading
 
 ---
 
-## 🚀 Quick Start
-
-### 1. Prerequisites
-- **Python 3.10+**
-- **Azure OpenAI API Access**
-- **VS Code** (Recommended) with the "SQLite Viewer" extension.
-
-### 2. Installation
-Clone the repository and set up your virtual environment:
+# 🧩 System Architecture
 
 ```
-bash
+            USER INTERACTION
+                  |
+          [ 1. FRONTEND LAYER ] <--------------------------+
+          +-------------------------------------------+    |
+          |   Streamlit Web UI (app.py)               |    |
+          |                                           |    |
+          |  +----------------+   +----------------+  |    | (Updates metrics)
+          |  | Chat Interface |   | Live Dashboard |<-+----+
+          |  +-------+--------+   +----------------+  |    |
+          |          |                   ^            |    |
+          |  +-------v--------+          |            |    |
+          |  | HITL Intercept |----------+            |    |
+          |  | Approve/Reject | (Manual Gatekeeper)   |    |
+          |  +-------+--------+                       |    |
+          +----------|--------------------------------+    |
+                     |                                     |
+          [ 2. ORCHESTRATION LAYER ]                       |
+          +----------v--------------------------------+    |
+          |   LangGraph Agent Engine                  |    |
+          |                                           |    |
+          |  +---------------+   +-----------------+  |    |
+          |  | Triage Agent  |-->|  Memory Saver   |  |    |
+          |  | (ReAct Logic) |   | (thread_id/UUID)|  |    |
+          |  +-------+-------+   +-----------------+  |    |
+          |          |                                |    |
+          |  +-------v-------+ (Breakpoint)           |    |
+          |  | interrupt_before ["tools"]             |    |
+          |  +-------+-------+                        |    |
+          +----------|--------------------------------+    |
+                     |                                     |
+          [ 3. COMMUNICATION LAYER ]                       |
+          +----------v--------------------------------+    |
+          |   MCP Bridge (Client/Server)              |    |
+          |                                           |    |
+          |  +------------+       +---------------+   |    |
+          |  | MCP Client |<----->|  MCP Server   |   |    |
+          |  +------------+       | (mcp_server.py)|  |    |
+          |                       +-------+-------+   |    |
+          +-------------------------------|-----------+    |
+                                          |                |
+          [ 4. DATA & API LAYER ]         |                |
+          +-------------------------------v-----------+    |
+          |                                           |    |
+          |  +--------------+       +--------------+  |    |
+          |  | inventory.db |       | logistics.db |--+----+
+          |  +--------------+       +--------------+  |
+          |          ^                     ^          |
+          |          |        +------------+          |
+          |          +--------| Open-Meteo |          |
+          |                   | Weather API|          |
+          |                   +------------+          |
+          +-------------------------------------------+
+```
+
+---
+
+# 🚀 Quick Start
+
+## 1️⃣ Prerequisites
+
+- Python **3.10+**
+- Azure OpenAI API Access
+- **VS Code** (Recommended) with **SQLite Viewer extension**
+
+---
+
+## 2️⃣ Installation
+
+Clone the repository and set up your virtual environment.
+
+```bash
 # Clone the repository
 git clone <your-repo-url>
 cd supply-chain-swarm
 
-# Create and activate virtual environment
+# Create virtual environment
 python -m venv venv
-# On Windows:
+
+# Activate environment
+
+# Windows
 venv\Scripts\activate
-# On Mac/Linux:
+
+# Mac/Linux
 source venv/bin/activate
 
 # Install dependencies
 pip install streamlit asyncio python-dotenv langchain-openai langchain-mcp-adapters langgraph
-
 ```
 
-### 3. Environment Setup
+---
 
-Create a `.env` file in the root directory and add your credentials:
+## 3️⃣ Environment Setup
 
-```
-env
+Create a `.env` file in the root directory:
+
+```env
 AZURE_OPENAI_ENDPOINT="your-endpoint"
 AZURE_OPENAI_API_KEY="your-key"
 AZURE_OPENAI_API_VERSION="2024-05-01-preview"
 AZURE_OPENAI_DEPLOYMENT_NAME="gpt-4o"
-
 ```
 
-### 4. Database Initialization
+---
 
-Generate the mock SQLite databases (`inventory.db` and `logistics.db`):
+## 4️⃣ Database Initialization
 
-```
-bash
+Generate the mock SQLite databases.
+
+```bash
 python setup_db.py
-
 ```
 
-### 5. Launch the Command Center
+This creates:
 
-Start the application:
+- `inventory.db`
+- `logistics.db`
 
-```
-bash
+---
+
+## 5️⃣ Launch the Command Center
+
+Start the application.
+
+```bash
 streamlit run app.py
-
 ```
-```
----
-
-## 🛠️ Key Features
-
-### 📦 Agentic Tools (MCP Server)
-
-* **Logistics:** Track shipments via coordinates and update status in real-time.
-* **Inventory:** Query SKU stock levels, daily burn rates, and forecast stockouts.
-* **Procurement:** Draft Purchase Orders and retrieve supplier lead times/contact info.
-* **Weather:** Check real-time weather conditions at shipment coordinates using Open-Meteo.
-
-### 🛡️ Human-in-the-Loop (HITL)
-
-The agent is restricted from performing "Write" actions (like drafting POs or changing shipment statuses) without explicit authorization. The UI intercepts these requests and presents an **Approve/Reject** interface.
-
-### 📊 Operations Dashboard
-
-The sidebar provides real-time business intelligence:
-
-* **Delayed Shipments:** Count of shipments requiring immediate attention.
-* **Low Stock Alerts:** Items with < 5 days of inventory remaining.
-* **Pending POs:** Active procurement requests currently in draft.
 
 ---
 
-## 📂 Project Structure
+# 🛠️ Key Features
 
-* `app.py`: Streamlit frontend, LangGraph orchestration, and UI rendering.
-* `mcp_server.py`: The MCP Tool Server defining all database and API interfaces.
-* `setup_db.py`: Database schema definition and mock data population script.
-* `databases/`: Local SQLite storage directory (ignored by Git).
-* `.gitignore`: Configured to protect API keys and local data.
+## 📦 Agentic Tools (MCP Server)
+
+- **Logistics**
+  - Track shipments via coordinates
+  - Update shipment status in real-time
+
+- **Inventory**
+  - Query SKU stock levels
+  - Calculate daily burn rates
+  - Forecast stockouts
+
+- **Procurement**
+  - Draft Purchase Orders
+  - Retrieve supplier lead times and contacts
+
+- **Weather**
+  - Check real-time conditions using **Open-Meteo API**
 
 ---
 
-## 📝 Example Queries
+## 🛡️ Human-in-the-Loop (HITL)
 
-* *"What is the status of SHP-123 and is weather impacting it?"*
-* *"We are low on SKU-101. Draft a PO for 500 units from our supplier."*
-* *"Who is the supplier for SKU-103 and what is their lead time?"*
-* *"Set shipment SHP-999 to 'In Transit' now that the delay is resolved."*
+The agent is restricted from performing **write operations** without human approval.
+
+Examples:
+- Draft Purchase Orders
+- Change shipment status
+- Update logistics records
+
+The UI intercepts these actions and presents an **Approve / Reject interface**.
+
+---
+
+# 📊 Operations Dashboard
+
+The sidebar provides real-time operational insights.
+
+**Metrics include:**
+
+- 🚚 **Delayed Shipments**  
+  Shipments requiring immediate attention
+
+- 📦 **Low Stock Alerts**  
+  SKUs with **less than 5 days** of inventory remaining
+
+- 📑 **Pending POs**  
+  Procurement requests currently in draft state
+
+---
+
+# 📂 Project Structure
+
 ```
+supply-chain-swarm/
+
+├── app.py
+├── mcp_server.py
+├── setup_db.py
+│
+├── databases/
+│   ├── inventory.db
+│   └── logistics.db
+│
+└── .gitignore
+```
+
+### File Descriptions
+
+- **app.py**  
+  Streamlit frontend, LangGraph orchestration, UI rendering
+
+- **mcp_server.py**  
+  MCP Tool Server defining database and API interfaces
+
+- **setup_db.py**  
+  Database schema creation and mock data population
+
+- **databases/**  
+  Local SQLite storage (ignored by Git)
+
+- **.gitignore**  
+  Protects API keys and local data
+
+---
+
+# 📝 Example Queries
+
+Try asking the system:
+
+- *"What is the status of SHP-123 and is weather impacting it?"*
+- *"We are low on SKU-101. Draft a PO for 500 units from our supplier."*
+- *"Who is the supplier for SKU-103 and what is their lead time?"*
+- *"Set shipment SHP-999 to 'In Transit' now that the delay is resolved."*
