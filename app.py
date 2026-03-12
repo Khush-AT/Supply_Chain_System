@@ -8,6 +8,7 @@ from typing import Annotated, Literal, TypedDict
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
+
 from langchain_openai import AzureChatOpenAI
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage
@@ -220,17 +221,33 @@ if state.next and any("tools" in n for n in state.next):
         if st.button("✅ Approve Action", use_container_width=True):
             asyncio.run(process_stream(None))
     with col2:
-        if st.button("❌ Reject Action", use_container_width=True):
-            # Formally reject the tool call so the agent knows it was blocked
+        if st.button("❌ Reject", use_container_width=True):
+
             rejection_messages = [
                 ToolMessage(
                     tool_call_id=tc["id"],
                     name=tc["name"],
-                    content="ERROR: The Human Supervisor rejected this action. Do NOT proceed. Acknowledge this."
-                ) for tc in last_msg.tool_calls
+                    content="ERROR: Human supervisor rejected this tool execution."
+                )
+                for tc in last_msg.tool_calls
             ]
-            agent_graph.update_state(config, {"messages": rejection_messages}, as_node=pending_node)
-            asyncio.run(process_stream(None))
+
+            # Add final assistant response
+            rejection_messages.append(
+                HumanMessage(
+                    content="The requested action was rejected by the human supervisor. The task has been cancelled."
+                )
+            )
+
+            # Update state
+            agent_graph.update_state(
+                config,
+                {"messages": rejection_messages},
+                as_node=pending_node
+            )
+
+            # Stop execution
+            st.rerun()
 
 # --- 6. Chat Input ---
 elif prompt := st.chat_input("Command the Swarm (e.g., 'Check weather for shipment S-100, if delayed, reorder stock')..."):
